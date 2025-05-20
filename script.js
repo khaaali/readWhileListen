@@ -7,6 +7,10 @@ class ReadWhileListen {
         this.words = [];
         this.currentChapter = null;
         this.chapters = [];
+        this.currentWordIndex = 0;
+        this.ssmlText = '';
+        this.ssmlWords = [];
+        this.selectedBook = localStorage.getItem('selectedBook') || 'Dakshinamurthy';
     }
 
     initializeElements() {
@@ -17,6 +21,7 @@ class ReadWhileListen {
         this.currentTime = document.getElementById('currentTime');
         this.duration = document.getElementById('duration');
         this.textContent = document.getElementById('textContent');
+        this.ssmlContent = document.querySelector('.ssml-content');
         this.playbackSpeed = document.getElementById('playbackSpeed');
         this.chapterNav = document.getElementById('chapterNav');
         this.breadcrumb = document.getElementById('breadcrumb');
@@ -34,6 +39,8 @@ class ReadWhileListen {
         this.audio.addEventListener('timeupdate', () => this.updateProgress());
         this.audio.addEventListener('loadedmetadata', () => this.updateDuration());
         this.audio.addEventListener('ended', () => this.handleEnd());
+        // Text highlighting disabled as requested
+        // this.audio.addEventListener('timeupdate', () => this.highlightCurrentWord());
         
         // Toggle chapters sidebar on mobile
         console.log('Setting up toggle chapters button, element:', this.toggleChaptersBtn);
@@ -76,53 +83,194 @@ class ReadWhileListen {
 
     async loadChapterMapping() {
         try {
-            const response = await fetch('chapter_mapping.json');
+            // Get the selected book from localStorage or use default
+            const bookPath = `Books/${this.selectedBook}/${this.selectedBook}.json`;
+            const response = await fetch(bookPath);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to load chapter mapping for book: ${this.selectedBook}`);
+            }
+            
             const data = await response.json();
             this.chapters = data.chapters;
+            
+            // Update book title in UI
+            document.title = `${this.selectedBook} - Read While Listen`;
+            
+            // Update the chapter navigation
+            this.updateChapterNavigation();
             
             if (this.chapters.length > 0) {
                 await this.loadChapter(this.chapters[0]);
             }
         } catch (error) {
             console.error('Error loading chapter mapping:', error);
-            this.textContent.innerHTML = '<p>Error loading chapters. Please check the console for details.</p>';
+            this.textContent.innerHTML = `<p>Error loading chapters for book "${this.selectedBook}". Please check the console for details.</p>`;
         }
     }
 
     async loadChapter(chapter) {
         try {
-            const ssmlResponse = await fetch(chapter.ssml_file);
-            const ssmlText = await ssmlResponse.text();
+            const chapterId = chapter.id;
+            const bookPath = `Books/${this.selectedBook}`;
+            const ssmlPath = `${bookPath}/${chapter.ssml_file}`;
             
+            const response = await fetch(ssmlPath);
+            if (!response.ok) {
+                throw new Error(`Failed to load SSML file: ${ssmlPath}`);
+            }
+            
+            const ssmlText = await response.text();
+            
+            // Parse SSML and extract text content
             const parser = new DOMParser();
             const doc = parser.parseFromString(ssmlText, 'text/xml');
-            const textContent = doc.getElementsByTagName('speak')[0];
-            const text = textContent ? textContent.textContent : ssmlText;
+            const speakElement = doc.querySelector('speak');
             
-            // Format the text with paragraphs for better readability
-            const formattedText = text
-                .split('\n\n')
-                .map(para => `<p>${para}</p>`)
-                .join('');
-                
-            this.textContent.innerHTML = formattedText;
+            if (!speakElement) {
+                throw new Error('Invalid SSML format - no speak element found');
+            }
+
+            // Extract text content
+            const textContent = this.extractTextFromSSML(speakElement);
+            
+            // Process words for highlighting
+            this.processSSMLWords(speakElement);
+            
+            // Update UI
+            this.ssmlContent.innerHTML = textContent;
             this.currentChapter = chapter;
-            this.audio.src = chapter.audio_file;
+            this.updateBreadcrumb(chapter.id, chapter.title);
+            
+            // Load corresponding audio
+            const audioFile = `${bookPath}/${chapter.audio_file}`;
+            console.log('Loading audio file:', audioFile);
+            
+            // Add error handling for audio loading
+            this.audio.onerror = (e) => {
+                console.error('Error loading audio file:', e);
+                alert(`Failed to load audio file: ${audioFile}. Please check the console for details.`);
+            };
+            
+            this.audio.oncanplaythrough = () => {
+                console.log('Audio file loaded and can be played');
+            };
+            
+            this.audio.src = audioFile;
             this.audio.load();
             
-            this.updateBreadcrumb(chapter.id, chapter.title);
-            this.progress.value = 0;
-            this.currentTime.textContent = '0:00';
-            this.updateChapterNavigation();
+            // Reset current word index
+            this.currentWordIndex = 0;
+            
+            // Clear any existing highlights
+            const existingHighlights = this.ssmlContent.querySelectorAll('.highlight');
+            existingHighlights.forEach(highlight => highlight.classList.remove('highlight'));
+            
         } catch (error) {
             console.error('Error loading chapter:', error);
-            this.textContent.innerHTML = `<p>Error loading chapter ${chapter.id}. Please check the console for details.</p>`;
+            alert('Error loading chapter: ' + error.message);
+        }
+    }
+
+    extractTextFromSSML(element) {
+        let text = '';
+        
+        // Process all child nodes
+        element.childNodes.forEach(child => {
+            if (child.nodeType === Node.TEXT_NODE) {
+                text += child.textContent;
+            } else if (child.nodeType === Node.ELEMENT_NODE) {
+                // Handle SSML elements
+                if (child.tagName === 'BREAK') {
+                    // Add appropriate spacing for breaks
+                    const strength = child.getAttribute('strength') || 'medium';
+                    const time = child.getAttribute('time');
+                    
+                    if (time) {
+                        // Add time-based break
+                        text += `<span class="pause" data-time="${time}"></span>`;
+                    } else {
+                        // Add strength-based break
+                        text += `<span class="pause" data-strength="${strength}"></span>`;
+                    }
+                } else {
+                    // Recursively process other elements
+                    text += this.extractTextFromSSML(child);
+                }
+            }
+        });
+        
+        return text.trim();
+    }
+
+    processSSMLWords(element, startIndex = 0) {
+        this.ssmlWords = [];
+        this.parseSSMLElement(element, startIndex);
+    }
+
+    parseSSMLElement(element, startIndex = 0) {
+        let currentText = '';
+        let currentIndex = startIndex;
+
+        element.childNodes.forEach(child => {
+            if (child.nodeType === Node.TEXT_NODE) {
+                const words = child.textContent.trim().split(/\s+/);
+                words.forEach(word => {
+                    if (word) {
+                        this.ssmlWords.push({
+                            word: word,
+                            start: currentIndex,
+                            end: currentIndex + word.length,
+                            timestamp: null // Will be populated during playback
+                        });
+                        currentIndex += word.length + 1; // +1 for space
+                    }
+                });
+                currentText += child.textContent;
+            } else if (child.nodeType === Node.ELEMENT_NODE) {
+                const childText = this.parseSSMLElement(child, currentIndex);
+                currentText += childText;
+                currentIndex += childText.length;
+            }
+        });
+
+        return currentText;
+    }
+
+    highlightCurrentWord() {
+        if (!this.audio || !this.ssmlWords.length) return;
+
+        const currentTime = this.audio.currentTime;
+        const duration = this.audio.duration;
+        
+        // Find the word that should be highlighted
+        const wordIndex = Math.floor((currentTime / duration) * this.ssmlWords.length);
+        
+        // Remove previous highlight
+        const previousHighlight = this.ssmlContent.querySelector('.highlight');
+        if (previousHighlight) {
+            previousHighlight.classList.remove('highlight');
+        }
+
+        // Highlight the current word
+        if (wordIndex >= 0 && wordIndex < this.ssmlWords.length) {
+            const word = this.ssmlWords[wordIndex];
+            const text = this.ssmlContent.textContent;
+            const start = word.start;
+            const end = word.end;
+            
+            // Create a span around the current word
+            const highlightedText = text.slice(0, start) +
+                '<span class="highlight">' + text.slice(start, end) + '</span>' +
+                text.slice(end);
+            
+            this.ssmlContent.innerHTML = highlightedText;
         }
     }
 
     updateBreadcrumb(chapterId, chapterTitle) {
         if (this.breadcrumb) {
-            this.breadcrumb.textContent = `Chapter ${chapterId}: ${chapterTitle}`;
+            this.breadcrumb.textContent = `${this.selectedBook} - Chapter ${chapterId}: ${chapterTitle}`;
         }
     }
 
@@ -204,6 +352,12 @@ class ReadWhileListen {
         if (currentIndex < this.chapters.length - 1) {
             this.loadChapter(this.chapters[currentIndex + 1]);
         }
+    }
+    
+    changeBook(bookId) {
+        this.selectedBook = bookId;
+        localStorage.setItem('selectedBook', bookId);
+        this.loadChapterMapping();
     }
     
     toggleChaptersSidebar() {

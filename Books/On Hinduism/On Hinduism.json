@@ -1,0 +1,10 @@
+{
+    "chapters": [
+        {
+            "id": 1,
+            "title": "Introduction",
+            "audio_file": "Audios/introduction.mp3",
+            "ssml_file": "Chapters/introduction.ssml"
+        }
+    ]
+}

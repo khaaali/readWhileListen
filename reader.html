@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Read While Listen</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="images/placeholder.svg" type="image/svg+xml">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="header-content">
+                <div class="header-left">
+                    <h1>Read While Listen</h1>
+                    <button id="toggleChapters" class="toggle-chapters-btn" aria-label="Toggle chapters" type="button">
+                        <span class="toggle-icon">☰</span>
+                    </button>
+                </div>
+                <div class="header-right">
+                    <div class="breadcrumb">
+                        <span id="breadcrumb">Chapter 1</span>
+                    </div>
+                    <a href="index.html" class="books-button" id="booksButton">
+                        <span class="books-icon">📚</span>
+                        <span class="books-text">Books</span>
+                    </a>
+                </div>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <!-- Left sidebar with chapter navigation -->
+            <aside class="chapter-sidebar">
+                <h2>Chapters</h2>
+                <ul id="chapterNav" class="chapter-list">
+                    <!-- Chapter items will be dynamically loaded here -->
+                </ul>
+            </aside>
+            
+            <!-- Main text content area -->
+            <div class="text-container" id="textContent">
+                <div class="ssml-content">
+                    <!-- SSML text will be dynamically loaded here -->
+                </div>
+            </div>
+        </main>
+        
+        <!-- Audio controls at the bottom -->
+        <footer class="audio-controls">
+            <div class="controls-section">
+                <div class="controls-group">
+                    <div class="speed-selector">
+                        <label for="playbackSpeed">Speed</label>
+                        <select id="playbackSpeed">
+                            <option value="0.5">0.5x</option>
+                            <option value="0.75">0.75x</option>
+                            <option value="1.0" selected>1x</option>
+                            <option value="1.25">1.25x</option>
+                            <option value="1.5">1.5x</option>
+                            <option value="2.0">2.0x</option>
+                            <option value="2.0">2x</option>
+                        </select>
+                    </div>
+                    <div class="main-controls">
+                        <button id="rewindBtn" class="control-btn" title="Rewind 10 seconds">
+                            <i class="icon">⏪</i>
+                        </button>
+                        <button id="playPauseBtn" class="control-btn" title="Play/Pause">
+                            <i class="icon">▶️</i>
+                        </button>
+                        <button id="forwardBtn" class="control-btn" title="Forward 10 seconds">
+                            <i class="icon">⏩</i>
+                        </button>
+                    </div>
+                </div>
+                <div class="progress-container">
+                    <span id="currentTime">0:00</span>
+                    <input type="range" id="progress" min="0" max="100" value="0">
+                    <span id="duration">0:00</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+    "books": [
+        {
+            "id": "Dakshinamurthy",
+            "title": "Dakshinamurthy",
+            "description": "A collection of chapters about Dakshinamurthy",
+            "coverImage": "images/placeholder.svg"
+        },
+        {
+            "id": "On Hinduism",
+            "title": "On Hinduism",
+            "description": "A collection of chapters about Hinduism",
+            "coverImage": "images/placeholder.svg"
+        }
+    ]
+}

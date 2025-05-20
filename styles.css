@@ -68,6 +68,12 @@ header {
     padding: 0;
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
 .toggle-chapters-btn {
     background-color: rgba(255, 255, 255, 0.2);
     border: none;
@@ -135,7 +141,28 @@ h2 {
     border-radius: 20px;
     display: inline-block;
     width: auto;
-    margin-right: 1rem;
+}
+
+.books-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    text-decoration: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.books-button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.books-icon {
+    font-size: 1.2rem;
 }
 
 /* Main content area with sidebar and text */
@@ -212,6 +239,39 @@ h2 {
     padding: 2rem;
     overflow-y: auto;
     background: var(--card-bg);
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+.ssml-content {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    hyphens: auto;
+}
+
+.ssml-content p {
+    margin-bottom: 1.5rem;
+    text-align: justify;
+}
+
+.ssml-content .highlight {
+    background-color: rgba(67, 97, 238, 0.2);
+    border-radius: 3px;
+    padding: 2px 4px;
+}
+
+.ssml-content .emphasis {
+    font-weight: bold;
+}
+
+.ssml-content .pause {
+    display: inline-block;
+    width: 100%;
+    height: 1rem;
+    margin: 0.5rem 0;
+}
+
+.text-container {
     font-size: 1.1rem;
     line-height: 1.7;
     font-family: 'Noto Sans Devanagari', sans-serif;
@@ -461,18 +521,22 @@ h2 {
     
     .header-content {
         padding: 0 0.5rem;
-        justify-content: center;
+        justify-content: space-between;
         position: relative;
         width: 100%;
     }
     
     .header-left {
-        justify-content: center;
-        flex: 1;
+        justify-content: flex-start;
+        flex: 0 0 auto;
         position: relative;
-        width: 100%;
         display: flex;
         align-items: center;
+    }
+    
+    .header-right {
+        flex: 0 0 auto;
+        justify-content: flex-end;
     }
     
     h1 {
@@ -483,6 +547,15 @@ h2 {
     
     .breadcrumb {
         display: none; /* Hide on mobile */
+    }
+    
+    .books-text {
+        display: none; /* Hide text on mobile, show only icon */
+    }
+    
+    .books-button {
+        padding: 0.4rem;
+        margin-right: 0.5rem;
     }
     
     .toggle-chapters-btn {
